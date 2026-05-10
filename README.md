@@ -64,6 +64,10 @@ project_id = "YOUR_TICKTICK_PROJECT_ID"
 domain = "co.jp"
 list_type = "SHOP"
 store_password = false
+
+[slack]
+enabled = false
+redact_item_name = false
 ```
 
 `store_password = false` is the recommended default. The tool stores Amazon session data after interactive login, not the Amazon password.
@@ -126,6 +130,27 @@ amazon.login_data
 ```
 
 If `config.amazon.store_password = true`, it also stores `amazon.password`, but this is not recommended.
+
+
+## Slack Notifications
+
+Slack notifications use an Incoming Webhook URL stored in SecretStore. Create the webhook in Slack, then save it locally:
+
+```bash
+uv run atb auth slack --webhook-url YOUR_SLACK_INCOMING_WEBHOOK_URL
+```
+
+Enable Slack notifications in the config:
+
+```toml
+[slack]
+enabled = true
+redact_item_name = false
+```
+
+With `redact_item_name = false`, Slack messages include the shopping item name. Set it to `true` if item names should not appear in Slack.
+
+Slack notification failures do not block the sync. If TickTick task creation succeeds, the tool still marks the Alexa item complete even when Slack posting fails. The sync summary increments `notification_failures` for those cases.
 
 ## One-Shot Sync
 
@@ -216,5 +241,7 @@ It should not print a Python traceback.
 `ticktick.client_secret is missing` means `atb auth ticktick --client-secret ...` has not stored the client secret, or you are using a different SecretStore backend than the one used for sync.
 
 `TickTick access token is missing` means the authorization URL was generated but the `--code` exchange has not completed.
+
+`slack.webhook_url is missing` means `[slack].enabled = true` but `atb auth slack --webhook-url ...` has not been run for the same SecretStore backend.
 
 Amazon authentication and Alexa list access use unofficial endpoints. If Amazon changes the mobile-app API, login, list fetch, or completion may fail even when TickTick is configured correctly.

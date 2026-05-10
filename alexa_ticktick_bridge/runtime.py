@@ -11,6 +11,7 @@ from alexa_ticktick_bridge.auth.secret_store import (
     SecretStore,
 )
 from alexa_ticktick_bridge.clients.alexa_lists import AlexaListsClient
+from alexa_ticktick_bridge.clients.slack import SlackNotifier
 from alexa_ticktick_bridge.clients.ticktick import TickTickClient
 from alexa_ticktick_bridge.config import AppConfig
 from alexa_ticktick_bridge.storage.sqlite_store import SQLiteSyncStore
@@ -45,11 +46,14 @@ async def create_sync_service(
     amazon_session = await amazon_auth.restore()
     alexa = AlexaListsClient(amazon_session)
     ticktick = TickTickClient(session, secret_store)
+    notifier = SlackNotifier(session, secret_store) if config.slack.enabled else None
     store = SQLiteSyncStore(config.storage.sqlite_path)
     return SyncService(
         alexa=alexa,
         ticktick=ticktick,
         store=store,
+        notifier=notifier,
+        redact_notification_item_name=config.slack.redact_item_name,
         list_type=config.amazon.list_type,
         project_id=config.ticktick.project_id,
     )

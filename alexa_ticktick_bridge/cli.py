@@ -83,6 +83,21 @@ def auth_amazon(
         raise typer.BadParameter(str(exc)) from exc
 
 
+@auth_app.command("slack")
+def auth_slack(
+    webhook_url: Annotated[str | None, typer.Option("--webhook-url", hide_input=True)] = None,
+    plain_secret_file: PlainSecretFileOption = None,
+    allow_plain_secret_file: AllowPlainSecretFileOption = False,
+) -> None:
+    secret_store = create_secret_store(
+        plain_secret_file=plain_secret_file,
+        allow_plain_secret_file=allow_plain_secret_file,
+    )
+    url = webhook_url or typer.prompt("Slack webhook URL", hide_input=True)
+    secret_store.set("slack.webhook_url", url)
+    console.print("Slack webhook URL saved")
+
+
 @auth_app.command("ticktick")
 def auth_ticktick(
     config: ConfigOption = DEFAULT_CONFIG_FILE,

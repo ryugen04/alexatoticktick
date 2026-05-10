@@ -22,6 +22,17 @@ class FakeTickTick:
         return TickTickTask(task_id=f"task-{title}", project_id=project_id, title=title)
 
 
+class FakeNotifier:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.messages: list[str] = []
+
+    async def post(self, text: str) -> None:
+        self.messages.append(text)
+        if self.fail:
+            raise RuntimeError("slack failed")
+
+
 async def test_sync_creates_task_then_completes_alexa_item(tmp_path) -> None:
     alexa = FakeAlexa()
     store = SQLiteSyncStore(tmp_path / "state.db")
@@ -33,6 +44,8 @@ async def test_sync_creates_task_then_completes_alexa_item(tmp_path) -> None:
     assert result.created == 1
     assert result.completed == 1
     assert result.skipped == 1
+    assert result.notified == 0
+    assert result.notification_failures == 0
     assert alexa.completed == ["a1"]
     record = store.get("a1")
     assert record is not None
@@ -49,3 +62,59 @@ async def test_sync_is_idempotent(tmp_path) -> None:
 
     assert second.created == 0
     assert second.skipped == 2
+
+
+async def test_sync_posts_slack_notification_after_task_create(tmp_path) -> None:
+    alexa = FakeAlexa()
+    notifier = FakeNotifier()
+    store = SQLiteSyncStore(tmp_path / "state.db")
+    service = SyncService(
+        alexa=alexa,
+        ticktick=FakeTickTick(),
+        store=store,
+        notifier=notifier,
+    )
+
+    result = await service.sync_once()
+
+    assert result.notified == 1
+    assert result.notification_failures == 0
+    assert notifier.messages == ["Synced Alexa shopping item to TickTick: milk"]
+    assert alexa.completed == ["a1"]
+
+
+async def test_sync_redacts_slack_item_name_when_configured(tmp_path) -> None:
+    notifier = FakeNotifier()
+    service = SyncService(
+        alexa=FakeAlexa(),
+        ticktick=FakeTickTick(),
+        store=SQLiteSyncStore(tmp_path / "state.db"),
+        notifier=notifier,
+        redact_notification_item_name=True,
+    )
+
+    result = await service.sync_once()
+
+    assert result.notified == 1
+    assert "milk" not in notifier.messages[0]
+    assert "<redacted>" in notifier.messages[0]
+
+
+async def test_sync_continues_when_slack_notification_fails(tmp_path) -> None:
+    alexa = FakeAlexa()
+    notifier = FakeNotifier(fail=True)
+    service = SyncService(
+        alexa=alexa,
+        ticktick=FakeTickTick(),
+        store=SQLiteSyncStore(tmp_path / "state.db"),
+        notifier=notifier,
+    )
+
+    result = await service.sync_once()
+
+    assert result.created == 1
+    assert result.notified == 0
+    assert result.notification_failures == 1
+    assert result.completed == 1
+    assert result.failures == 0
+    assert alexa.completed == ["a1"]

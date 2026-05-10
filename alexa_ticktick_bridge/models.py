@@ -52,5 +52,7 @@ class SyncResult(BaseModel):
     scanned: int = 0
     created: int = 0
     skipped: int = 0
+    notified: int = 0
+    notification_failures: int = 0
     completed: int = 0
     failures: int = 0
