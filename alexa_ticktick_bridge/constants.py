@@ -1,0 +1,5 @@
+APP_NAME = "alexa-ticktick-bridge"
+SERVICE_NAME = "alexa-ticktick-bridge"
+DEFAULT_CONFIG_PATH = "~/.config/alexa-ticktick-bridge/config.toml"
+DEFAULT_SQLITE_PATH = "~/.local/share/alexa-ticktick-bridge/state.db"
+DEFAULT_LOCK_PATH = "~/.local/state/alexa-ticktick-bridge/run.lock"
