@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alexa-ticktick-bridge"
+version = "0.1.0"
+description = "Personal Alexa Shopping List to TickTick bridge"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "ryugen04" }]
+dependencies = [
+  "aiohttp>=3.10",
+  "aioamazondevices>=13,<14",
+  "pydantic>=2.7",
+  "typer>=0.12",
+  "rich>=13.7",
+  "keyring>=25",
+  "structlog>=24",
+]
+
+[project.scripts]
+atb = "alexa_ticktick_bridge.cli:app"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "aioresponses>=0.7",
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "pip-audit>=2.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["alexa_ticktick_bridge"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["alexa_ticktick_bridge"]
