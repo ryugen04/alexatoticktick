@@ -18,8 +18,24 @@ class FakeAlexa:
 
 
 class FakeTickTick:
+    def __init__(self, *, open_tasks: list[TickTickTask] | None = None) -> None:
+        self.open_tasks = open_tasks or []
+        self.created_titles: list[str] = []
+
     async def create_task(self, *, title: str, project_id: str | None) -> TickTickTask:
+        self.created_titles.append(title)
         return TickTickTask(task_id=f"task-{title}", project_id=project_id, title=title)
+
+    async def find_open_task_by_title(
+        self,
+        *,
+        title: str,
+        project_id: str | None,
+    ) -> TickTickTask | None:
+        for task in self.open_tasks:
+            if task.title == title and task.project_id == project_id:
+                return task
+        return None
 
 
 class FakeNotifier:
@@ -118,3 +134,43 @@ async def test_sync_continues_when_slack_notification_fails(tmp_path) -> None:
     assert result.completed == 1
     assert result.failures == 0
     assert alexa.completed == ["a1"]
+
+
+async def test_same_name_can_sync_again_when_no_open_ticktick_task(tmp_path) -> None:
+    alexa = FakeAlexa()
+    store = SQLiteSyncStore(tmp_path / "state.db")
+    store.record_created(
+        alexa_item_id="old-alexa-id",
+        ticktick_task_id="old-task-milk",
+        item_name="milk",
+    )
+    store.mark_completed("old-alexa-id")
+    ticktick = FakeTickTick()
+    service = SyncService(alexa=alexa, ticktick=ticktick, store=store)
+
+    result = await service.sync_once()
+
+    assert result.created == 1
+    assert result.completed == 1
+    assert ticktick.created_titles == ["milk"]
+    assert alexa.completed == ["a1"]
+
+
+async def test_open_ticktick_duplicate_completes_alexa_without_creating_task(tmp_path) -> None:
+    alexa = FakeAlexa()
+    ticktick = FakeTickTick(
+        open_tasks=[TickTickTask(task_id="existing-task", project_id="p1", title="milk")]
+    )
+    store = SQLiteSyncStore(tmp_path / "state.db")
+    service = SyncService(alexa=alexa, ticktick=ticktick, store=store, project_id="p1")
+
+    result = await service.sync_once()
+
+    assert result.created == 0
+    assert result.completed == 1
+    assert result.failures == 0
+    assert ticktick.created_titles == []
+    assert alexa.completed == ["a1"]
+    record = store.get("a1")
+    assert record is not None
+    assert record.ticktick_task_id == "existing-task"

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS sync_records (
     created_at TEXT NOT NULL,
     completed_at TEXT
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_sync_records_item_hash
+DROP INDEX IF EXISTS idx_sync_records_item_hash;
+CREATE INDEX IF NOT EXISTS idx_sync_records_item_hash
 ON sync_records(item_name_hash);
 """
