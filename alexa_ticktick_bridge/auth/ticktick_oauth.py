@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import Any
 from urllib.parse import urlencode
 
-from aiohttp import ClientSession
+from aiohttp import BasicAuth, ClientSession
 
 from alexa_ticktick_bridge.auth.secret_store import SecretStore
 from alexa_ticktick_bridge.errors import AuthFailed
@@ -31,17 +32,18 @@ async def exchange_code(
     client_id: str,
     redirect_uri: str,
     code: str,
-) -> dict[str, object]:
+    scope: str = "tasks:read tasks:write",
+) -> dict[str, Any]:
     client_secret = secret_store.get("ticktick.client_secret")
     if not client_secret:
         raise AuthFailed("ticktick.client_secret is missing")
     async with session.post(
         TOKEN_URL,
+        auth=BasicAuth(client_id, client_secret),
         data={
-            "client_id": client_id,
-            "client_secret": client_secret,
             "code": code,
             "grant_type": "authorization_code",
+            "scope": scope,
             "redirect_uri": redirect_uri,
         },
     ) as response:

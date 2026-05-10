@@ -7,15 +7,28 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class AlexaListType(StrEnum):
+    SHOP = "SHOP"
+    TODO = "TODO"
+    CUSTOM = "CUSTOM"
+
+
 class AlexaItemStatus(StrEnum):
     ACTIVE = "ACTIVE"
     COMPLETE = "COMPLETE"
 
 
+class AlexaList(BaseModel):
+    list_id: str = Field(alias="listId")
+    list_type: AlexaListType = Field(alias="listType")
+    name: str = Field(default="", alias="listName")
+
+
 class AlexaListItem(BaseModel):
     item_id: str
-    version: int | None = None
     text: str
+    version: int = 0
+    list_id: str | None = None
     status: AlexaItemStatus = AlexaItemStatus.ACTIVE
     raw: dict[str, Any] = Field(default_factory=dict)
 
