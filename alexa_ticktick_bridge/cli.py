@@ -77,7 +77,10 @@ def auth_amazon(
             )
             console.print(f"Amazon login saved for amazon.{amazon_session.domain}")
 
-    asyncio.run(_run())
+    try:
+        asyncio.run(_run())
+    except BridgeError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 @auth_app.command("ticktick")
@@ -149,7 +152,10 @@ def sync_once(
             result = await service.sync_once()
             console.print(result.model_dump())
 
-    asyncio.run(_run())
+    try:
+        asyncio.run(_run())
+    except BridgeError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 @sync_app.command("daemon")
@@ -181,4 +187,7 @@ def sync_daemon(
                 max_backoff_seconds=app_config.poll.max_backoff_seconds,
             )
 
-    asyncio.run(_run())
+    try:
+        asyncio.run(_run())
+    except BridgeError as exc:
+        raise typer.BadParameter(str(exc)) from exc
