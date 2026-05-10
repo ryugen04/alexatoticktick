@@ -73,3 +73,25 @@ def test_sync_once_reports_missing_amazon_auth_without_traceback(tmp_path: Path)
     assert result.exit_code != 0
     assert "Amazon login data is missing" in result.stderr
     assert "Traceback" not in result.stderr
+
+
+def test_slack_auth_stores_webhook_url(tmp_path: Path) -> None:
+    secrets = tmp_path / "secrets.json"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "auth",
+            "slack",
+            "--webhook-url",
+            "https://hooks.slack.com/services/T/B/C",
+            "--plain-secret-file",
+            str(secrets),
+            "--allow-plain-secret-file",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Slack webhook URL saved" in result.stdout
+    assert "https://hooks.slack.com/services/T/B/C" in secrets.read_text(encoding="utf-8")
