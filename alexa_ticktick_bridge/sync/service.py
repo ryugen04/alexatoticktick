@@ -15,6 +15,13 @@ class AlexaListsPort(Protocol):
 class TickTickPort(Protocol):
     async def create_task(self, *, title: str, project_id: str | None) -> TickTickTask: ...
 
+    async def find_open_task_by_title(
+        self,
+        *,
+        title: str,
+        project_id: str | None,
+    ) -> TickTickTask | None: ...
+
 
 class NotifierPort(Protocol):
     async def post(self, text: str) -> None: ...
@@ -53,6 +60,24 @@ class SyncService:
         except Exception:
             result.notification_failures += 1
 
+    async def _complete_existing_task_item(
+        self,
+        item: AlexaListItem,
+        task: TickTickTask,
+        result: SyncResult,
+    ) -> None:
+        inserted = self.store.record_created(
+            alexa_item_id=item.item_id,
+            ticktick_task_id=task.task_id,
+            item_name=item.text,
+        )
+        if not inserted:
+            result.skipped += 1
+            return
+        await self.alexa.complete_item(item)
+        self.store.mark_completed(item.item_id)
+        result.completed += 1
+
     async def sync_once(self) -> SyncResult:
         result = SyncResult()
         items = await self.alexa.list_items(list_type=self.list_type)
@@ -61,10 +86,18 @@ class SyncService:
             if item.status != AlexaItemStatus.ACTIVE:
                 result.skipped += 1
                 continue
-            if self.store.has_alexa_item(item.item_id) or self.store.has_item_name(item.text):
+            if self.store.has_alexa_item(item.item_id):
                 result.skipped += 1
                 continue
             try:
+                existing_task = await self.ticktick.find_open_task_by_title(
+                    title=item.text,
+                    project_id=self.project_id,
+                )
+                if existing_task is not None:
+                    await self._complete_existing_task_item(item, existing_task, result)
+                    continue
+
                 task = await self.ticktick.create_task(title=item.text, project_id=self.project_id)
                 inserted = self.store.record_created(
                     alexa_item_id=item.item_id,

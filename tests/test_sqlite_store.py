@@ -9,11 +9,11 @@ def test_store_prevents_duplicate_alexa_item(tmp_path) -> None:
     assert store.has_alexa_item("a1")
 
 
-def test_store_prevents_duplicate_item_name(tmp_path) -> None:
+def test_store_allows_duplicate_item_name_for_new_alexa_item(tmp_path) -> None:
     store = SQLiteSyncStore(tmp_path / "state.db")
 
     assert store.record_created(alexa_item_id="a1", ticktick_task_id="t1", item_name="milk")
-    assert not store.record_created(alexa_item_id="a2", ticktick_task_id="t2", item_name="milk")
+    assert store.record_created(alexa_item_id="a2", ticktick_task_id="t2", item_name="milk")
     assert store.has_item_name("milk")
 
 
