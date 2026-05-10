@@ -79,7 +79,7 @@ async def test_sync_posts_slack_notification_after_task_create(tmp_path) -> None
 
     assert result.notified == 1
     assert result.notification_failures == 0
-    assert notifier.messages == ["Synced Alexa shopping item to TickTick: milk"]
+    assert notifier.messages == [":shopping_trolley: milk"]
     assert alexa.completed == ["a1"]
 
 

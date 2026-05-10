@@ -150,6 +150,8 @@ redact_item_name = false
 
 With `redact_item_name = false`, Slack messages include the shopping item name. Set it to `true` if item names should not appear in Slack.
 
+Slack posts use a simple `:shopping_trolley: {item name}` message.
+
 Slack notification failures do not block the sync. If TickTick task creation succeeds, the tool still marks the Alexa item complete even when Slack posting fails. The sync summary increments `notification_failures` for those cases.
 
 ## One-Shot Sync

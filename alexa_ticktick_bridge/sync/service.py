@@ -42,7 +42,7 @@ class SyncService:
 
     def _notification_text(self, item: AlexaListItem, task: TickTickTask) -> str:
         item_name = "<redacted>" if self.redact_notification_item_name else item.text
-        return f"Synced Alexa shopping item to TickTick: {item_name}"
+        return f":shopping_trolley: {item_name}"
 
     async def _notify(self, item: AlexaListItem, task: TickTickTask, result: SyncResult) -> None:
         if self.notifier is None:
